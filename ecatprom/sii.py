@@ -10,6 +10,11 @@ def from_file(fname):
     return d
 
 
+def to_file(s, fname):
+    f = open(fname, 'wb')
+    s.put(Writer(f))
+
+
 class CatType(enum.IntEnum):
     '''Enumerated values for specific categories
 
@@ -212,6 +217,50 @@ class Sii:
         # we track these so we can reserialize as is
         self.unknown = []  # (category type, bytes)
 
+    def put(self, w):
+        if not self.info:
+            raise RuntimeError('Requires an info section to write')
+        self.info.put(w)
+
+        header = CategoryHeader()
+
+        def putcat(category_type, item):
+            # handle non-existent categories
+            if item == None: return 
+            # create the buffer
+            buffer = BytesIO()
+            lw = Writer(buffer)
+            # put the item in it
+            item.put(lw)
+            lw.flush()
+            # check for required padding
+            if len(buffer.getvalue()) & 1:
+                buffer.write(b'\x00')  # pad to even number of bytes
+            # get the padded data
+            raw_data = buffer.getvalue()
+            # setup the header
+            header.category_type.value = category_type
+            header.len_in_words.value = len(raw_data)//2
+            # insert header
+            header.put(w)
+            # insert data
+            w.write_bytes(raw_data)
+
+        putcat(CatType.STRINGS, self.strings)
+        putcat(CatType.General, self.general)
+        putcat(CatType.FMMU, self.fmmu)
+        putcat(CatType.SyncM, self.syncm)
+        putcat(CatType.FMMUX, self.fmmux)
+        putcat(CatType.SyncUnit, self.sync_unit)
+        putcat(CatType.TXPDO, self.txpdo)
+        putcat(CatType.RXPDO, self.rxpdo)
+        putcat(CatType.DC, self.dc)
+        for cat, data in self.unknown:
+            header.category_type.value = cat
+            header.len_in_words.value = len(data)//2
+            header.put(w)
+            w.write_bytes(data)
+
     def take(self, reader):
         self.info = InfoStructure()
         self.info.take(reader)
@@ -242,13 +291,8 @@ class Sii:
                 if buffer.read():
                     raise RuntimeError('Data for DC Category is malformed')
             elif cat_id == CatType.STRINGS:
-                # get the length of the string section
-                r = Reader(buffer)
-                l = Int(8)
-                l.take(r)
-                # and read them
-                self.strings = Array(item_type=String, count=l.value)
-                self.strings.take(r)
+                self.strings = Array(item_type=String, length_prefixed=True)
+                self.strings.take(Reader(buffer))
                 if len(buffer.read()) > 1:  # padding may be added
                     raise RuntimeError('Data for String Category is malformed')
             elif cat_id == CatType.FMMU:

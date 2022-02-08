@@ -1,18 +1,20 @@
-from sii import Sii
+import sii
 from promtypes import Reader
 
 def main():
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('eeprom_file')
+    parser.add_argument('--round-trip', metavar="OUTFILE", help="Load SSI file and then write it back out to this file")
     args = parser.parse_args()
 
-    f = open(args.eeprom_file, 'rb')
     print(args.eeprom_file)
-    print('Info Structure')
-    d = Sii()
-    d.take(Reader(f))
-    print(d)
+    s = sii.from_file(args.eeprom_file)
+    print(s)
+    if args.round_trip:
+        print('Writing to', args.round_trip)
+        sii.to_file(s, args.round_trip)
+
 
 if __name__ == '__main__':
     main()
