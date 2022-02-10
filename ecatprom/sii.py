@@ -1,4 +1,4 @@
-from promtypes import *
+from basictypes import *
 from io import BytesIO
 import enum  # we keep the namespace to avoid collisions with our prom enum
 
@@ -283,31 +283,35 @@ class Sii:
                 g.name_idx.value = 0
             else:
                 s = self.strings[g.name_idx.value - 1].value
-                if s not in a: a.append(s)
+                if s not in a:
+                    a.append(s)
                 g.name_idx.value = len(a)
         if g.group_idx.value:
             if g.group_idx.value > len(self.strings):
                 g.group_idx.value = 0
             else:
                 s = self.strings[g.group_idx.value - 1].value
-                if s not in a: a.append(s)
+                if s not in a:
+                    a.append(s)
                 g.group_idx.value = len(a)
         if g.order_idx.value:
             if g.order_idx.value > len(self.strings):
                 g.order_idx.value = 0
             else:
                 s = self.strings[g.order_idx.value - 1].value
-                if s not in a: a.append(s)
+                if s not in a:
+                    a.append(s)
                 g.order_idx.value = len(a)
         if g.img_idx.value:
             if g.img_idx.value > len(self.strings):
                 g.img_idx.value = 0
             else:
                 s = self.strings[g.img_idx.value - 1].value
-                if s not in a: a.append(s)
+                if s not in a:
+                    a.append(s)
                 g.img_idx.value = len(a)
         self.strings = Array(String, length_prefixed=True)
-        for s in a: 
+        for s in a:
             ss = String()
             ss.value = s
             self.strings.append(ss)
@@ -321,7 +325,8 @@ class Sii:
 
         def putcat(category_type, item):
             # handle non-existent categories
-            if item == None: return 
+            if item == None:
+                return
             # create the buffer
             buffer = BytesIO()
             lw = Writer(buffer)
@@ -355,7 +360,7 @@ class Sii:
             header.len_in_words.value = len(data)//2
             header.put(w)
             w.write_bytes(data)
-        
+
         # insert end marker
         header.category_type.value = CatType.END
         header.len_in_words.value = 0xFFFF

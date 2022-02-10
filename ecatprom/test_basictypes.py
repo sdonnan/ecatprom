@@ -1,5 +1,5 @@
 from io import BytesIO
-from promtypes import *
+from basictypes import *
 
 def test_write_read():
     buffer = BytesIO()
@@ -88,4 +88,4 @@ def test_string():
     uut = String()
     r = Reader(buffer)
     uut.take(r)
-    assert uut.value == b'hello world!'
+    assert uut.value == 'hello world!'
