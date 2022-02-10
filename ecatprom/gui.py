@@ -11,17 +11,39 @@ def mk_widget(parent, item):
             e1 = ttk.Combobox(parent)
             e1['values'] = list(item.options.values())
             e1.set(item.value)
+            def update(_):
+                try:
+                    item.value = e1.get()
+                except:
+                    print('Bad value', e1.get())
+                    e1.set(item.value)
+            e1.bind('<<ComboboxSelected>>', update)
             return (e1, None)
     if isinstance(item, promtypes.Int):
         if item.bits == 1:
             v = IntVar(value=item.value)
             cb = ttk.Checkbutton(parent, variable=v, command=lambda: v.get())
+            def update(*args):
+                item.value = v.get()
+                print(item)
+            v.trace("w", update)
             return (cb, None)
         else:
             e1 = ttk.Entry(parent)
             e1.insert(0, str(item.value))
             # show in hex as well
             e2 = ttk.Label(parent, text='0x{:X}'.format(item.value))
+            def update(key=None):
+                try:
+                    item.value = int(e1.get(), base=0)
+                except:
+                    print('Bad value', e1.get())
+                    item.value = 0
+                    if key and key.keysym == 'Return':
+                        e1.delete(0,END)
+                        e1.insert(0, str(item.value))
+                e2['text'] = '0x{:X}'.format(item.value)
+            e1.bind('<KeyRelease>', update)
             return (e1, e2)
     else:
         return (ttk.Label(parent, text=str(item)), None)
@@ -68,6 +90,7 @@ class App(ttk.Frame):
         self.mainframe.add(f, text='Info')
         add_item_row(f, self.model.info, 'Info', 0)
         if self.model.general:
+            self.add_quickfix()
             f = ttk.Frame(self)
             self.mainframe.add(f, text='General')
             add_item_row(f, self.model.general, 'General')
@@ -88,6 +111,37 @@ class App(ttk.Frame):
             self.mainframe.add(f, text='DC')
             add_item_row(f, self.model.dc, 'DC')
 
+    def add_quickfix(self):
+        f = ttk.Frame(self)
+        self.mainframe.add(f, text='Strings')
+
+        row = 0
+        en = ttk.Entry(f)
+        en.insert(0, str(self.model.general_name))
+        en.grid(column=1, row=row)
+        ttk.Label(f, text="Name").grid(column=0, row=row)
+
+        row += 1
+        eg = ttk.Entry(f)
+        eg.insert(0, str(self.model.general_group))
+        eg.grid(column=1, row=row)
+        ttk.Label(f, text="Group").grid(column=0, row=row)
+
+        row += 1
+        eo = ttk.Entry(f)
+        eo.insert(0, str(self.model.general_order))
+        eo.grid(column=1, row=row)
+        ttk.Label(f, text="Order").grid(column=0, row=row)
+
+        def doit():
+            self.model.general_name = en.get()
+            self.model.general_group = eg.get()
+            self.model.general_order = eo.get()
+            self.update_from_model() # nuke it! This is shitty and slow but its the easy button right now
+
+        row += 1
+        ttk.Button(f, command=doit, text='Set').grid(column=1, row=row)
+
     def open_file(self):
         fname = filedialog.askopenfilename()
         if fname: self.load(fname)
@@ -96,8 +150,16 @@ class App(ttk.Frame):
         self.model = sii.from_file(fname)
         self.update_from_model()
 
+    def save(self, fname):
+        sii.to_file(self.model, fname)
+
     def save_file(self): pass
-    def save_file_as(self): pass
+    def save_file_as(self): 
+        if self.model == None:
+            print('No file open, cant save')
+            return
+        fname = filedialog.asksaveasfilename()
+        if fname: self.save(fname)
 
 
 def main():

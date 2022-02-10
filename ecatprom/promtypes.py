@@ -61,7 +61,6 @@ class Writer:
         '''Write bytes'''
         if self.pos_bits == self.bpb:
             nn = self._data.write(self.bytes_buffer.to_bytes(1, 'little'))
-            print('wrote', hex(self.bytes_buffer))
             if nn != 1:
                 raise OutOfBytesError()
             self.pos_bits = 0
@@ -69,7 +68,6 @@ class Writer:
         elif self.pos_bits != 0:
             raise ValueError('Cant write bytes until byte aligned')
         nn = self._data.write(d)
-        print('wrote', d)
         if len(d) != nn:
             raise OutOfBytesError()
         return
@@ -247,8 +245,9 @@ class Struct(Item):
 
 class String(Item):
 
-    def __init__(self):
-        self._value = ""
+    def __init__(self, value=''):
+        self._value = None
+        self.value = value
 
     def take(self, reader):
         slen = Int(8)
@@ -262,11 +261,11 @@ class String(Item):
 
     @property
     def value(self):
-        return self._value
+        return self._value.decode('ascii')
 
     @value.setter
     def value(self, v):
-        r = v.encode('utf8')
+        r = v.encode('ascii')
         if len(r) > 255:
             raise ValueError('String too long')
         self._value = r
@@ -318,6 +317,9 @@ class Array(Struct):
 
     def __len__(self):
         return len(self._members)
+
+    def append(self, v):
+        return self._members.append(v)
 
     def __str__(self):
         s = []

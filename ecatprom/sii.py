@@ -217,6 +217,101 @@ class Sii:
         # we track these so we can reserialize as is
         self.unknown = []  # (category type, bytes)
 
+    @property
+    def general_name(self):
+        '''Helper to get the name string'''
+        if self.general and self.strings:
+            if self.general.name_idx.value != 0:
+                return self.strings[self.general.name_idx.value - 1].value
+
+    @general_name.setter
+    def general_name(self, s):
+        '''Helper to set the name string'''
+        if self.general == None:
+            raise RuntimeError('Need a general section to add name string')
+        if self.strings == None:
+            self.strings = Array(String, length_prefixed=True)
+        self.strings.append(String(s))
+        self.general.name_idx.value = len(self.strings)
+        self.compact_strings()
+
+    @property
+    def general_group(self):
+        '''Helper to get the group string'''
+        if self.general and self.strings:
+            if self.general.group_idx.value != 0:
+                return self.strings[self.general.group_idx.value - 1].value
+
+    @general_group.setter
+    def general_group(self, s):
+        '''Helper to set the group string'''
+        if self.general == None:
+            raise RuntimeError('Need a general section to add group string')
+        if self.strings == None:
+            self.strings = Array(String, length_prefixed=True)
+        self.strings.append(String(s))
+        self.general.group_idx.value = len(self.strings)
+        self.compact_strings()
+
+    @property
+    def general_order(self):
+        '''Helper to get the order string'''
+        if self.general and self.strings:
+            if self.general.order_idx.value != 0:
+                return self.strings[self.general.order_idx.value - 1].value
+
+    @general_order.setter
+    def general_order(self, s):
+        '''Helper to set the order string'''
+        if self.general == None:
+            raise RuntimeError('Need a general section to add order string')
+        if self.strings == None:
+            self.strings = Array(String, length_prefixed=True)
+        self.strings.append(String(s))
+        self.general.order_idx.value = len(self.strings)
+        self.compact_strings()
+
+    def compact_strings(self):
+        '''Remove unused strings'''
+        if self.general == None:
+            self.strings = None
+            return
+        g = self.general
+        a = []
+        if g.name_idx.value:
+            if g.name_idx.value > len(self.strings):
+                g.name_idx.value = 0
+            else:
+                s = self.strings[g.name_idx.value - 1].value
+                if s not in a: a.append(s)
+                g.name_idx.value = len(a)
+        if g.group_idx.value:
+            if g.group_idx.value > len(self.strings):
+                g.group_idx.value = 0
+            else:
+                s = self.strings[g.group_idx.value - 1].value
+                if s not in a: a.append(s)
+                g.group_idx.value = len(a)
+        if g.order_idx.value:
+            if g.order_idx.value > len(self.strings):
+                g.order_idx.value = 0
+            else:
+                s = self.strings[g.order_idx.value - 1].value
+                if s not in a: a.append(s)
+                g.order_idx.value = len(a)
+        if g.img_idx.value:
+            if g.img_idx.value > len(self.strings):
+                g.img_idx.value = 0
+            else:
+                s = self.strings[g.img_idx.value - 1].value
+                if s not in a: a.append(s)
+                g.img_idx.value = len(a)
+        self.strings = Array(String, length_prefixed=True)
+        for s in a: 
+            ss = String()
+            ss.value = s
+            self.strings.append(ss)
+
     def put(self, w):
         if not self.info:
             raise RuntimeError('Requires an info section to write')
@@ -260,6 +355,11 @@ class Sii:
             header.len_in_words.value = len(data)//2
             header.put(w)
             w.write_bytes(data)
+        
+        # insert end marker
+        header.category_type.value = CatType.END
+        header.len_in_words.value = 0xFFFF
+        header.put(w)
 
     def take(self, reader):
         self.info = InfoStructure()
