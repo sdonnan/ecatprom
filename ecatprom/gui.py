@@ -3,8 +3,8 @@ from tkinter import ttk
 from tkinter import filedialog
 import sys
 
-import sii
-import basictypes
+from . import sii
+from . import basictypes
 
 
 def mk_widget(parent, item):
@@ -76,6 +76,7 @@ class App(ttk.Frame):
         self.pack(fill=BOTH, expand=1)
         self.make_initial_widgets()
         self.model = None
+        self.fname = None
 
     def make_initial_widgets(self):
         # create top level menubar
@@ -99,7 +100,7 @@ class App(ttk.Frame):
         self.mainframe.add(f, text='Info')
         add_item_row(f, self.model.info, 'Info', 0)
         if self.model.general:
-            self.add_quickfix()
+            self.add_strings()
             f = ttk.Frame(self)
             self.mainframe.add(f, text='General')
             add_item_row(f, self.model.general, 'General')
@@ -121,7 +122,7 @@ class App(ttk.Frame):
             self.mainframe.add(f, text='DC')
             add_item_row(f, self.model.dc, 'DC')
 
-    def add_quickfix(self):
+    def add_strings(self):
         f = ttk.Frame(self)
         self.mainframe.add(f, text='Strings')
 
@@ -160,12 +161,15 @@ class App(ttk.Frame):
 
     def load(self, fname):
         self.model = sii.from_file(fname)
+        self.fname = fname
         self.update_from_model()
 
     def save(self, fname):
         sii.to_file(self.model, fname)
 
-    def save_file(self): pass
+    def save_file(self):
+        if self.fname:
+            self.save(self.fname)
 
     def save_file_as(self):
         if self.model == None:
@@ -176,20 +180,25 @@ class App(ttk.Frame):
             self.save(fname)
 
 
-def main():
+def main(fname=None):
     # create the thing
     root = Tk()
     root.title('ECAT SII PROM Tool')
-    root.geometry('256x256')
+    root.geometry('500x900')
     app = App(root)
     # make menus behave
     app.option_add('*tearOff', FALSE)
     # check args
-    if len(sys.argv) == 2:
-        app.load(sys.argv[1])
+    if fname:
+        app.load(fname)
     # go
     app.mainloop()
 
 
 if __name__ == '__main__':
+    target = None
+    try:
+        target = sys.argv[1]
+    except IndexError:
+        pass
     main()

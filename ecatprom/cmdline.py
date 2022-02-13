@@ -1,21 +1,24 @@
-import sii
-from basictypes import Reader
+from . import sii
+from . import gui
 
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('eeprom_file')
-    parser.add_argument('--round-trip', metavar="OUTFILE",
-                        help="Load SSI file and then write it back out to this file")
+    parser = argparse.ArgumentParser(
+        description='View and edit SII PROM contents')
+    parser.add_argument('eeprom_file', nargs='?')
+    parser.add_argument('--no-gui', action='store_true',
+                        help='Just print the contents to the terminal')
     args = parser.parse_args()
 
-    print(args.eeprom_file)
-    s = sii.from_file(args.eeprom_file)
-    print(s)
-    if args.round_trip:
-        print('Writing to', args.round_trip)
-        sii.to_file(s, args.round_trip)
+    if args.no_gui:
+        if args.eeprom_file:
+            print(args.eeprom_file)
+            s = sii.from_file(args.eeprom_file)
+            print(s)
+
+    else:
+        gui.main(args.eeprom_file)
 
 
 if __name__ == '__main__':

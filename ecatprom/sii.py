@@ -1,4 +1,4 @@
-from basictypes import *
+from .basictypes import *
 from io import BytesIO
 import enum  # we keep the namespace to avoid collisions with our prom enum
 
