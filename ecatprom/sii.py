@@ -12,7 +12,10 @@ def from_file(fname):
 
 def to_file(s, fname):
     f = open(fname, 'wb')
-    s.put(Writer(f))
+    w = Writer(f)
+    s.put(w)
+    w.flush()
+    f.close()
 
 
 class CatType(enum.IntEnum):
